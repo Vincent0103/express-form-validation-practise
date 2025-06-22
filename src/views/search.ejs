@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+  </head>
+  <body>
+    <h1><%= title %></h1>
+    <ul>
+      <% if (locals.users) { %> <% users.forEach((user) => { %>
+      <li>
+        ID: <%= user.id %>, Name: <%= user.firstName %> <%= user.lastName %>,
+        Email: <%= user.mail %><% if (user.age) { %>, Age: <%= user.age, %> <% }
+        if (user.bio) { %> Bio: <%= user.bio %> <% } %>
+      </li>
+      <% }); %> <% } %>
+    </ul>
+    <a href="/">Back to home</a>
+  </body>
+</html>
