@@ -113,7 +113,7 @@ const usersController = (() => {
 
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.render("searchUser", {
+        return res.status(400).render("searchUser", {
           title: "Search user",
           errors: errors.array(),
         });
@@ -121,7 +121,7 @@ const usersController = (() => {
 
       const { name, mail } = req.query;
       if (!name && !mail) {
-        return res.render("searchUser", {
+        return res.status(400).render("searchUser", {
           title: "Search user",
           errors: [{ msg: "Must provide a name or email to search." }],
         });
