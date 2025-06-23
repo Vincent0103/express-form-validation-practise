@@ -3,7 +3,7 @@ import usersStorage from '../storages/usersStorage';
 import { body, query, validationResult } from "express-validator";
 
 const alphaErr = "must only contain letters.";
-const lengthErr = "must be between 1 and 10 characters.";
+const lengthErr = (min, max) => `must be between ${min} and ${max} characters.`;
 const mailErr = "must be formatted properly like so: johndoe@company.com";
 const ageErr = "must be in the range 18 and 120";
 const descLengthErr = "must be below 200 characters.";
@@ -11,10 +11,10 @@ const descLengthErr = "must be below 200 characters.";
 const validateUser = [
   body("firstName").trim()
     .isAlpha().withMessage(`First name ${alphaErr}`)
-    .isLength({ min: 1, max: 10 }).withMessage(`First name ${lengthErr}`),
+    .isLength({ min: 1, max: 10 }).withMessage(`First name ${lengthErr(1, 10)}`),
   body("lastName").trim()
     .isAlpha().withMessage(`Last name ${alphaErr}`)
-    .isLength({ min: 1, max: 10 }).withMessage(`Last name ${lengthErr}`),
+    .isLength({ min: 1, max: 10 }).withMessage(`Last name ${lengthErr(1, 10)}`),
   body("mail").trim()
     .isEmail().withMessage(`Email ${mailErr}`),
   body("age").optional({ values: "falsy" }).trim()
@@ -23,9 +23,20 @@ const validateUser = [
     .isLength({ max: 200 }).withMessage(`Bio ${descLengthErr}`)
 ];
 
+
 const validateSearchUser = [
-  query("name").notEmpty()
-]
+  query("name")
+    .optional({ checkFalsy: true })
+    .trim()
+    .escape()
+    .isAlpha().withMessage(`Name ${alphaErr}`)
+    .isLength({ min: 1, max: 20 }).withMessage(`Name ${lengthErr(1, 20)}`),
+  query("email")
+    .optional({ checkFalsy: true })
+    .trim()
+    .escape()
+    .isEmail().withMessage(`Email ${mailErr}`)
+];
 
 const usersController = (() => {
   const usersListGet = (req, res) => {
@@ -91,25 +102,38 @@ const usersController = (() => {
     res.redirect("/");
   }
 
-  const usersSearchGet = (req, res) => {
-    const { name, mail } = req.query;
-    if ((name && name.length > 0) || (mail && mail.length > 0)) {
+  const usersSearchGet = [
+    validateSearchUser,
+    (req, res) => {
+      if (Object.keys(req.query).length === 0) {
+        return res.render("searchUser", {
+          title: "Search user"
+        });
+      }
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.render("searchUser", {
+          title: "Search user",
+          errors: errors.array(),
+        });
+      }
+
+      const { name, mail } = req.query;
+      if (!name && !mail) {
+        return res.render("searchUser", {
+          title: "Search user",
+          errors: [{ msg: "Must provide a name or email to search." }],
+        });
+      }
+
       const users = usersStorage.getUsers(name, mail);
       res.render("search", {
         title: "Search results",
         users: users
       });
-    } else if (name?.length === 0 && mail?.length === 0) {
-      return res.status(400).render("searchUser", {
-        title: "Search user",
-        errors: [{ msg: "Must specify name or email." }],
-      });
-    } else {
-      res.render("searchUser", {
-        title: "Search user"
-      });
     }
-  };
+  ];
 
   return {
     usersListGet, usersCreateGet, usersCreatePost,
